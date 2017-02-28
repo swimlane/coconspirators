@@ -1,0 +1,39 @@
+{
+  "name": "coconspirators",
+  "version": "1.0.0",
+  "description": "RabbitMQ Message Bus Library for TypeScript",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swimlane/coconspirators.git"
+  },
+  "keywords": [
+    "rabbitmq",
+    "amqplib",
+    "ampq",
+    "pubsub",
+    "messagebus",
+    "queue",
+    "typescript"
+  ],
+  "author": "Austin McDaniel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/swimlane/coconspirators/issues"
+  },
+  "homepage": "https://github.com/swimlane/coconspirators#readme",
+  "devDependencies": {
+    "tslint": "^4.4.2",
+    "@types/node": "^7.0.5",
+    "amqplib": "^0.5.1",
+    "tslint-config-swimlane": "^2.0.1",
+    "typescript": "^2.1.6"
+  },
+  "dependencies": {
+    "shortid": "^2.2.6"
+  }
+}
