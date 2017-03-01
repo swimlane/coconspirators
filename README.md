@@ -7,13 +7,13 @@ with RabbitMQ and has best-practices baked in. Features include:
 - Middleware Support
 - TypeScript First
 
-### Install
+## Install
 `npm i coconspirators --S`
 
-### Building
+## Building
 `npm run build`
 
-### Usage
+## Usage
 ```javascript
 import { Rabbit, json } from 'coconspirators';
 
@@ -56,3 +56,8 @@ function myJson() {
 
 const queue = client.queue('foo', {}, myJson());
 ```
+
+## Similar
+- [coworkers](https://github.com/tjmehta/coworkers)
+- [rabbit-queue](https://github.com/Workable/rabbit-queue/)
+- [rabbitr](https://github.com/urbanmassage/node-rabbitr)
