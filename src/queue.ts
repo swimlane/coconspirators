@@ -74,7 +74,7 @@ export class Queue {
 
       // if replyTo and result passed, call em back
       if(!!msg.properties.replyTo && reply) {
-        const { replyTo, correlationId } = msg.properties.correlationId;
+        const { replyTo, correlationId } = msg.properties;
         
         // invoke publish middlewares
         if(this.middlewares) {
