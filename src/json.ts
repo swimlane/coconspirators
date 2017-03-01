@@ -1,8 +1,8 @@
 export function json() {
   return {
     subscribe: async (msg) => {
-      if(msg.content) {
-        const content = msg.content.toString();
+      if(msg) {
+        const content = msg.toString();
         return JSON.parse(content);
       }
     },
