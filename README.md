@@ -6,16 +6,49 @@ with RabbitMQ and has best-practices baked in.
 ## Install
 `npm i coconspirators --S`
 
-### Usage
-```
-import { Rabbit } from 'coconspirators';
+## Building
+- `npm run build`
 
-const client = new Rabbit({ 
+### Usage
+```javascript
+import { Rabbit, json } from 'coconspirators';
+
+const client = new Rabbit({
+  // url of the rabbit server
   url: 'amqp://rabbitmq:5672',
+
+  // supports conole and winston loggers
   logger: console,
+
+  // connect on init?
   connectImmediately: true
 });
 
-client.subscribe('foo', (res) => console.log(res));
-client.publish('foo', { foo: true });
+// Explicit Invoking Queues
+const queue = client.queue('foo');
+queue.subscribe((res) => console.log(res));
+queue.publish({ foo: true });
+
+// Implicit Invoking Queues
+queue.subscribe('foo', (res) => console.log(res));
+queue.publish('foo', { foo: true });
+
+// Middleware Usage
+const queue = client.queue('foo', {}, json());
+
+// Custom Middleware
+function myJson() {
+  return {
+    subscribe: async (msg) => {
+      const content = msg.content.toString();
+      return JSON.parse(content);
+    },
+    publish: async (msg) => {
+      const json = JSON.stringify(msg);
+      return new Buffer(json);
+    }
+  }
+}
+
+const queue = client.queue('foo', {}, myJson());
 ```
