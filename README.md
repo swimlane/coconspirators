@@ -3,6 +3,11 @@ coconspirators is a microservice framework for RabbitMQ written in TypeScript. U
 [qmqp.node](https://github.com/squaremo/amqp.node), the battle-tested AMQP client, under the hood to communicate 
 with RabbitMQ and has best-practices baked in.
 
+## Features
+- Simple API for subscribing, publishing and replying
+- Middleware Support
+- TypeScript First
+
 ## Install
 `npm i coconspirators --S`
 
