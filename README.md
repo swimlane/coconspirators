@@ -33,9 +33,9 @@ const queue = client.queue('foo');
 queue.subscribe(({ response, message }) => console.log(response, message));
 queue.publish({ foo: true });
 
-// Implicit Invoking Queues
-queue.subscribe('foo', ({ response, message }) => console.log(response, message));
-queue.publish('foo', { foo: true });
+// Implicit Invoking Queues from client instance
+client.subscribe('foo', ({ response, message }) => console.log(response, message));
+client.publish('foo', { foo: true });
 
 // Middleware Usage
 const queue = client.queue('foo', {}, json());
@@ -60,6 +60,10 @@ const queue = client.queue('foo', {}, myJson());
 const queue = client.queue('foo', { reply: true });
 const result = client.publish('foo', { foo: true });
 const reply = await client.replyOf('foo', result.correlationId)
+
+// Events
+client.on('connected', () => console.log('connected!'))
+client.on('disconnected', () => console.log('disconnected!'))
 ```
 
 ## Similar
