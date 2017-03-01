@@ -11,7 +11,7 @@ with RabbitMQ and has best-practices baked in. Features include:
 `npm i coconspirators --S`
 
 ### Building
-- `npm run build`
+`npm run build`
 
 ### Usage
 ```javascript
