@@ -79,7 +79,7 @@ export class Rabbit extends EventEmitter {
     const queue = await this.queue(replyName);
     
     return new Promise((resolve) => {
-      queue.subscribe(replyName, (msg) => {
+      queue.subscribe((msg) => {
         if(msg.properties.correlationId === correlationId) {
           resolve(msg);
         }
