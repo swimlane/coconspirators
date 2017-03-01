@@ -30,11 +30,11 @@ const client = new Rabbit({
 
 // Explicit Invoking Queues
 const queue = client.queue('foo');
-queue.subscribe((res) => console.log(res));
+queue.subscribe(({ response, message }) => console.log(response, message));
 queue.publish({ foo: true });
 
 // Implicit Invoking Queues
-queue.subscribe('foo', (res) => console.log(res));
+queue.subscribe('foo', ({ response, message }) => console.log(response, message));
 queue.publish('foo', { foo: true });
 
 // Middleware Usage
@@ -55,6 +55,11 @@ function myJson() {
 }
 
 const queue = client.queue('foo', {}, myJson());
+
+// RPC
+const queue = client.queue('foo', { reply: true });
+const result = client.publish('foo', { foo: true });
+const reply = await client.replyOf('foo', result.correlationId)
 ```
 
 ## Similar

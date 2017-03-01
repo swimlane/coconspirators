@@ -60,9 +60,9 @@ export class Queue {
     }, options);
 
     // consume the message
-    return chnl.consume(this.name, async (msg: amqp.Message) => {
+    return chnl.consume(this.name, async (message: amqp.Message) => {
       // invoke the subscribe middlewares
-      let response = msg.content;
+      let response = message.content;
       if(this.middlewares) {
         for(const mw of this.middlewares) {
           if(mw.subscribe) response = await mw.subscribe(response);
@@ -70,11 +70,11 @@ export class Queue {
       }
 
       // invoke the callback
-      let reply = await fn(response);
+      let reply = await fn({ response, message });
 
       // if replyTo and result passed, call em back
-      if(!!msg.properties.replyTo && reply) {
-        const { replyTo, correlationId } = msg.properties;
+      if(!!message.properties.replyTo && reply) {
+        const { replyTo, correlationId } = message.properties;
         
         // invoke publish middlewares
         if(this.middlewares) {

@@ -79,9 +79,9 @@ export class Rabbit extends EventEmitter {
     const queue = await this.queue(replyName);
     
     return new Promise((resolve) => {
-      queue.subscribe((msg) => {
-        if(msg.properties.correlationId === correlationId) {
-          resolve(msg);
+      queue.subscribe((result) => {
+        if(result.message.properties.correlationId === correlationId) {
+          resolve(result);
         }
       }, { noAck: true });
     });
