@@ -55,7 +55,7 @@ export class Rabbit extends EventEmitter {
 
   async subscribe(name: string, callback: Function, ...middlewares: Function[]) {
     const queue = await this.queue(name);
-    return queue.subscribe(name, callback);
+    return queue.subscribe(callback);
   }
 
   async purge(name) {

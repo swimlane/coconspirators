@@ -51,7 +51,7 @@ export class Queue {
     };
   }
 
-  async subscribe(name: string, fn: Function, options: any = {}): Promise<any> {
+  async subscribe(fn: Function, options: any = {}): Promise<any> {
     const chnl = await this.channel;
 
     // transpose options
