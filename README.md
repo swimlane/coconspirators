@@ -28,6 +28,9 @@ const client = new Rabbit({
   connectImmediately: true
 });
 
+// Global Middleware
+client.use(json());
+
 // Explicit Invoking Queues
 const queue = client.queue('foo');
 queue.subscribe(({ response, message }) => console.log(response, message));
@@ -37,10 +40,10 @@ queue.publish({ foo: true });
 client.subscribe('foo', ({ response, message }) => console.log(response, message));
 client.publish('foo', { foo: true });
 
-// Middleware Usage
+// Queue Middleware Usage
 const queue = client.queue('foo', {}, json());
 
-// Custom Middleware
+// Custom Queue Middleware
 function myJson() {
   return {
     subscribe: async (msg) => {
@@ -59,7 +62,7 @@ const queue = client.queue('foo', {}, myJson());
 // RPC
 const queue = client.queue('foo', { reply: true });
 const result = client.publish('foo', { foo: true });
-const reply = await client.replyOf('foo', result.correlationId)
+const reply = await client.replyOf(result.correlationId)
 
 // Events
 client.on('connected', () => console.log('connected!'))

@@ -15,6 +15,7 @@ export class Rabbit extends EventEmitter {
   connection: amqp.Connection;
   queues: any = {};
   options: any;
+  middlewares: any[] = [];
 
   get logger() {
     if(this.options.logger) return this.options.logger;
@@ -41,6 +42,10 @@ export class Rabbit extends EventEmitter {
     this.connection = await this.createConnection(connectionStr);
     this.channel = await this.createChannel(this.connection);
 
+    this.channel.consume('amq.rabbitmq.reply-to', (result) => {
+      this.emit(result.properties.correlationId, result);
+    }, { noAck: true });
+
     return this.connection;
   }
 
@@ -49,13 +54,17 @@ export class Rabbit extends EventEmitter {
     return this.connect();
   }
 
+  use(middleware: any) {
+    this.middlewares.push(middleware);
+  }
+
   disconnect() {
     return this.connection.close();
   }
 
-  async subscribe(name: string, callback: Function, ...middlewares: Function[]) {
+  async subscribe(name: string, callback: Function, options: any = {}) {
     const queue = await this.queue(name);
-    return queue.subscribe(callback);
+    return queue.subscribe(callback, options);
   }
 
   async purge(name) {
@@ -74,39 +83,39 @@ export class Rabbit extends EventEmitter {
     return queue.publish(message, options);
   }
 
-  async replyOf(name: string, correlationId: string): Promise<any> {
-    const replyName = `${name}_reply`;
-    const queue = await this.queue(replyName);
-    
-    return new Promise((resolve) => {
-      queue.subscribe((result) => {
-        if(result.message.properties.correlationId === correlationId) {
-          resolve(result);
-        }
-      }, { noAck: true });
-    });
-  }
-
-  queue(name: string, options: any = {}, ...middlewares: any[]): Promise<any> {
+  queue(name: string, options: any = {},  ...middlewares: any[]): Promise<any> {
     if(!this.queues[name]) {
       this.queues[name] = new Promise(async resolve => {
         const conn = await this.connection;
         const chnl = await this.channel;
-        const queue = new Queue(chnl, name, options, ...middlewares);
+
+        const mw = this.middlewares;
+        if(middlewares) mw.concat(middlewares);
+        
+        const queue = new Queue(chnl, name, options, ...mw);
         await queue.initialize();
-
-        if(options.reply) {
-          const replyName = `${name}_reply`;
-          const replyQueue = new Queue(chnl, '', { exclusive: true }, ...middlewares);
-          await replyQueue.initialize();
-          this.queue[replyName] = replyQueue;
-        }
-
+        
         resolve(queue);
       });
     }
 
     return this.queues[name];
+  }
+
+  async replyOf(correlationId: string): Promise<any> {
+    return new Promise(async (resolve) => {
+
+      this.once(correlationId, async (message) => {
+        let response = message.content;
+        if(this.middlewares) {
+          for(const mw of this.middlewares) {
+            if(mw.subscribe) response = await mw.subscribe(response);
+          }
+        }
+
+        resolve({ message, response });
+      });
+    });
   }
 
   private async createConnection(connectionStr: string) {

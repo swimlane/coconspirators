@@ -4,7 +4,7 @@ import * as shortid from 'shortid';
 export class Queue {
 
   options: any;
-  q: any;
+  queue: any;
   middlewares: any[];
 
   constructor(private channel, private name, options: any = {}, ...middlewares: any[]) { 
@@ -18,7 +18,8 @@ export class Queue {
 
   async initialize(): Promise<any> {
     const chnl = await this.channel;
-    return this.q = chnl.assertQueue(this.name, this.options);
+    this.queue = await chnl.assertQueue(this.name, this.options);
+    return this.queue;
   }
 
   async publish(message: any, options: any = {}): Promise<any> {
@@ -34,7 +35,7 @@ export class Queue {
 
     // setup reply names
     if(this.options.reply) {
-      options.replyTo = `${this.name}_reply`;
+      options.replyTo = `amq.rabbitmq.reply-to`;
     }
 
     // invoke middlewares
@@ -51,7 +52,7 @@ export class Queue {
     };
   }
 
-  async subscribe(fn: Function, options: any = {}): Promise<any> {
+  async subscribe(callback: Function, options: any = {}): Promise<any> {
     const chnl = await this.channel;
 
     // transpose options
@@ -60,7 +61,7 @@ export class Queue {
     }, options);
 
     // consume the message
-    return chnl.consume(this.name, async (message: amqp.Message) => {
+    chnl.consume(this.name, async (message: amqp.Message) => {
       // invoke the subscribe middlewares
       let response = message.content;
       if(this.middlewares) {
@@ -70,7 +71,7 @@ export class Queue {
       }
 
       // invoke the callback
-      let reply = await fn({ response, message });
+      let reply = await callback({ response, message });
 
       // if replyTo and result passed, call em back
       if(!!message.properties.replyTo && reply) {
