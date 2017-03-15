@@ -22,14 +22,14 @@ const client = new Rabbit({
   url: 'amqp://rabbitmq:5672',
 
   // supports conole and winston loggers
-  logger: console,
-
-  // connect on init?
-  connectImmediately: true
+  logger: console
 });
 
 // Global Middleware
 client.use(json());
+
+// Connect!
+await client.connect();
 
 // Explicit Invoking Queues
 const queue = client.queue('foo');

@@ -26,13 +26,8 @@ export class Rabbit extends EventEmitter {
     super();
 
     this.options = Object.assign({
-      connectImmediately: true, 
       url: 'amqp://localhost:5672'
     }, options);
-    
-    if(this.options.connectImmediately) {
-      this.connection = this.connect();
-    }
   }
 
   async connect() {
