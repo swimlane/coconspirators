@@ -73,7 +73,7 @@ client.on('disconnected', () => console.log('disconnected!'))
 - [coworkers](https://github.com/tjmehta/coworkers)
 - [rabbit-queue](https://github.com/Workable/rabbit-queue/)
 - [rabbitr](https://github.com/urbanmassage/node-rabbitr)
-
+- [rabbot](https://github.com/arobson/rabbot)
 
 ## Credits
 `coconspirators` is a [Swimlane](http://swimlane.com) open-source project; we believe in giving back to the open-source community by sharing some of the projects we build for our application. Swimlane is an automated cyber security operations and incident response platform that enables cyber security teams to leverage threat intelligence, speed up incident response and automate security operations.
