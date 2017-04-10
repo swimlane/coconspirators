@@ -21,7 +21,7 @@ const client = new Rabbit({
   // url of the rabbit server
   url: 'amqp://rabbitmq:5672',
 
-  // supports conole and winston loggers
+  // supports console or custom loggers such as winston
   logger: console
 });
 
