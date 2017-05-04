@@ -17,11 +17,6 @@ export class Rabbit extends EventEmitter {
   options: any;
   middlewares: any[] = [];
 
-  get logger() {
-    if(this.options.logger) return this.options.logger;
-    return console;
-  }
-
   constructor(options: any = {}) {
     super();
 
@@ -40,6 +35,8 @@ export class Rabbit extends EventEmitter {
     this.channel.consume('amq.rabbitmq.reply-to', (result) => {
       this.emit(result.properties.correlationId, result);
     }, { noAck: true });
+
+    this.emit('connected');
 
     return this.connection;
   }
@@ -74,7 +71,6 @@ export class Rabbit extends EventEmitter {
 
   async publish(name: string, message: any, options: any = {}) {
     const queue = await this.queue(name);
-    this.logger.info(`Rabbit: Sending message to queue ${name}`, message);
     return queue.publish(message, options);
   }
 
@@ -117,20 +113,16 @@ export class Rabbit extends EventEmitter {
     const connection = await amqp.connect(connectionStr);
 
     connection.once('close', (err) => {
-      this.logger.warn('Rabbit: Connection closed', err);
       this.emit('disconnected', err);
     });
 
     connection.on('error', (err) => {
-      this.logger.error('Rabbit: Channel connection error', err);
+      this.emit('error', err);
       this.emit('disconnected', err);
     });
 
-    this.logger.info(`Rabbit: Connection opened: ${connectionStr}`);
-
     process.on('SIGINT', () => {
       connection.close(() => {
-        this.logger.warn('Rabbit: Connection closed through app termination');
         this.emit('disconnected');
         process.exit(0);
       });

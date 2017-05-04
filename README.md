@@ -19,10 +19,7 @@ import { Rabbit, json } from 'coconspirators';
 
 const client = new Rabbit({
   // url of the rabbit server
-  url: 'amqp://rabbitmq:5672',
-
-  // supports conole and winston loggers
-  logger: console
+  url: 'amqp://rabbitmq:5672'
 });
 
 // Global Middleware

@@ -28,7 +28,7 @@ export class Queue {
 
     // transpose options
     options = Object.assign({
-      persistent: false,
+      durable: false,
       noAck: true,
       correlationId
     }, options);
