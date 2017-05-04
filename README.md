@@ -1,6 +1,6 @@
 # coconspirators
 coconspirators is a microservice framework for RabbitMQ written in TypeScript. Under the hood it uses 
-[qmqp.node](https://github.com/squaremo/amqp.node), the battle-tested AMQP client, under the hood to communicate 
+[qmqp.node](https://github.com/squaremo/amqp.node), the battle-tested AMQP client, to communicate
 with RabbitMQ and has best-practices baked in. Features include:
 
 - Simple API for subscribing, publishing and replying
@@ -70,7 +70,7 @@ client.on('disconnected', () => console.log('disconnected!'))
 - [coworkers](https://github.com/tjmehta/coworkers)
 - [rabbit-queue](https://github.com/Workable/rabbit-queue/)
 - [rabbitr](https://github.com/urbanmassage/node-rabbitr)
-
+- [rabbot](https://github.com/arobson/rabbot)
 
 ## Credits
 `coconspirators` is a [Swimlane](http://swimlane.com) open-source project; we believe in giving back to the open-source community by sharing some of the projects we build for our application. Swimlane is an automated cyber security operations and incident response platform that enables cyber security teams to leverage threat intelligence, speed up incident response and automate security operations.
