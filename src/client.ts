@@ -36,8 +36,6 @@ export class Rabbit extends EventEmitter {
       this.emit(result.properties.correlationId, result);
     }, { noAck: true });
 
-    this.emit('connected');
-
     return this.connection;
   }
 
