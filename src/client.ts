@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
+import * as retry from 'retry';
 import { Queue } from './queue';
 
 /**
@@ -107,26 +108,36 @@ export class Rabbit extends EventEmitter {
     });
   }
 
-  private async createConnection(connectionStr: string) {
-    const connection = await amqp.connect(connectionStr);
+  private createConnection(connectionStr: string) {
+    const operation = retry.operation();
 
-    connection.once('close', (err) => {
-      this.emit('disconnected', err);
-    });
+    return new Promise((resolve, reject) => {
+      operation.attempt(async (attempt) => {
+        try {
+          const connection = await amqp.connect(connectionStr);
+          connection.once('close', (err) => {
+            this.emit('disconnected', err);
+          });
 
-    connection.on('error', (err) => {
-      this.emit('error', err);
-      this.emit('disconnected', err);
-    });
+          connection.on('error', (err) => {
+            this.emit('error', err);
+            this.emit('disconnected', err);
+          });
 
-    process.on('SIGINT', () => {
-      connection.close(() => {
-        this.emit('disconnected');
-        process.exit(0);
+          process.on('SIGINT', () => {
+            connection.close(() => {
+              this.emit('disconnected');
+              process.exit(0);
+            });
+          });
+
+          resolve(connection);
+        } catch(e) {
+          if(operation.retry(e)) return;
+          reject(e);
+        }
       });
     });
-
-    return connection;
   }
 
   private async createChannel(connection) {

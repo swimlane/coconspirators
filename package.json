@@ -1,6 +1,6 @@
 {
   "name": "coconspirators",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "RabbitMQ Message Bus Library for TypeScript",
   "main": "index.js",
   "scripts": {
