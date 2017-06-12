@@ -29,11 +29,11 @@
   "devDependencies": {
     "tslint": "^4.4.2",
     "@types/node": "^7.0.5",
-    "amqplib": "^0.5.1",
     "tslint-config-swimlane": "^2.0.1",
     "typescript": "^2.1.6"
   },
   "dependencies": {
-    "shortid": "^2.2.6"
+    "shortid": "^2.2.6",
+    "amqplib": "^0.5.1"
   }
 }
