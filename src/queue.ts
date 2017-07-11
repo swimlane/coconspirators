@@ -1,96 +1,147 @@
+import 'reflect-metadata';
+import { EventEmitter } from 'events';
+import { AmqpClient } from './client';
+import { NAME_KEY, QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions } from './types';
 import * as amqp from 'amqplib';
 import * as shortid from 'shortid';
+import { Injectable } from 'injection-js';
 
-export class Queue {
+@Injectable()
+export class AmqpQueue<T> extends EventEmitter {
 
-  options: any;
   queue: any;
-  middlewares: any[];
+  rpcQueue: any;
 
-  constructor(private channel, private name, options: any = {}, ...middlewares: any[]) { 
-    this.options = Object.assign({
-      durable: false,
-      noAck: true
-    }, options);
-
-    this.middlewares = middlewares;
-  }
-
-  async initialize(): Promise<any> {
-    const chnl = await this.channel;
-    this.queue = await chnl.assertQueue(this.name, this.options);
-    return this.queue;
-  }
-
-  async publish(message: any, options: any = {}): Promise<any> {
-    const chnl = await this.channel;
-    const correlationId = shortid.generate();
-
-    // transpose options
-    options = Object.assign({
-      durable: false,
-      noAck: true,
-      correlationId
-    }, options);
-
-    // setup reply names
-    if(this.options.reply) {
-      options.replyTo = `amq.rabbitmq.reply-to`;
-    }
-
-    // invoke middlewares
-    if(this.middlewares) {
-      for(const mw of this.middlewares) {
-        if(mw.publish) message = await mw.publish(message);
-      }
-    }
-
-    chnl.sendToQueue(this.name, message, options);
+  private get options(): QueueOptions {
+    const opts = this._options ? 
+      this._options : Reflect.getMetadata(NAME_KEY, this);
 
     return {
-      correlationId
+      durable: false,
+      noAck: true,
+      ...opts 
     };
   }
 
-  async subscribe(callback: Function, options: any = {}): Promise<any> {
-    const chnl = await this.channel;
+  private _options: QueueOptions;
 
-    // transpose options
-    options = Object.assign({ 
-      noAck: this.options.noAck 
-    }, options);
-
-    // consume the message
-    chnl.consume(this.name, async (message: amqp.Message) => {
-      // invoke the subscribe middlewares
-      let response = message.content;
-      if(this.middlewares) {
-        for(const mw of this.middlewares) {
-          if(mw.subscribe) response = await mw.subscribe(response);
-        }
-      }
-
-      // invoke the callback
-      let reply = await callback({ response, message });
-
-      // if replyTo and result passed, call em back
-      if(!!message.properties.replyTo && reply) {
-        const { replyTo, correlationId } = message.properties;
-        
-        // invoke publish middlewares
-        if(this.middlewares) {
-          for(const mw of this.middlewares) {
-            if(mw.publish) reply = await mw.publish(reply);
-          }
-        }
-
-        this.channel.sendToQueue(replyTo, reply, { correlationId });
-      }
-    }, options);
+  constructor(private client: AmqpClient, options?: any) {
+    super();
+    if(options) this._options = options;
+    this.createQueue();
   }
 
-  purge() {
-    return this.channel.purgeQueue(this.name);
+  async subscribe(callback: (message: T) => {}, options: SubscribeOptions = {}): Promise<any> {
+    const chnl = await this.client.channel;
+    const opts = { ...this.options, ...options };
+
+    return chnl.consume(this.options.name, async (message: amqp.Message) => {
+      if(opts.contentType === 'application/json') {
+        message.content = JSON.parse(message.content.toString());
+      }
+
+      message.reply = (content: any, replyOptions: ReplyOptions = {}) => {
+        replyOptions.replyTo = message.properties.replyTo;
+        replyOptions.correlationId = message.properties.correlationId;
+        return this.reply(content, replyOptions);
+      };
+
+      message.ack = () => {
+        this.ack(message);
+      };
+
+      callback(message);
+    }, opts);
   }
 
+  async publish(content: any, options: PublishOptions = {}): Promise<any> {
+    const chnl = await this.client.channel;
+    const opts: any = { ...this.options, ...options};
+
+    if(this.rpcQueue) {
+      const correlationId = shortid.generate();
+      opts.correlationId = correlationId;
+      opts.replyTo = this.rpcQueue.queue;
+    }
+
+    if(opts.contentType === 'application/json') {
+      const json = JSON.stringify(content);
+      content = new Buffer(json);
+    }
+
+    chnl.sendToQueue(this.options.name, content, opts);
+
+    return {
+      content,
+      properties: opts
+    };
+  }
+
+  async replyOf(idOrMessage: string|any): Promise<amqp.Message> {
+    let id = idOrMessage;
+    if(typeof id !== 'string') {
+      id = idOrMessage.properties.correlationId;
+    }
+
+    return new Promise((resolve, reject) => {
+      this.once(id, (message: amqp.Message) => {
+        if(this.options.contentType === 'application/json') {
+          try {
+            message.content = JSON.parse(message.content.toString());
+          } catch(e) { /* do nothing */ }
+        }
+        resolve(message);
+      });
+    });
+  }
+
+  async reply(content: any, options: ReplyOptions = {}): Promise<any> {
+    const chnl = await this.client.channel;
+
+    if(this.options.contentType === 'application/json') {
+      const json = JSON.stringify(content);
+      content = new Buffer(json);
+    }
+
+    chnl.sendToQueue(options.replyTo, content, options);
+
+    return {
+      content,
+      properties: options
+    };
+  }
+
+  async ack(message: amqp.Message): Promise<void> {
+    const chnl = await this.client.channel;
+    chnl.ack(message);
+  }
+
+  async purge(): Promise<any> {
+    const chnl = await this.client.channel;
+    return chnl.purgeQueue(this.options.name);
+  }
+
+  private async createQueue(): Promise<void> {
+    this.queue = new Promise((resolve, reject) => {
+      this.client.once('connected', async () => {
+        const chnl = await this.client.channel;
+        const queue = await chnl.assertQueue(this.options.name, this.options);
+
+        await this.consumeReplies();
+        resolve(queue);
+      });
+    });
+  }
+
+  private async consumeReplies(): Promise<void> {
+    if(!this.options.rpc) return;
+
+    const chnl = await this.client.channel;
+    this.rpcQueue = await chnl.assertQueue('', { exclusive: true });
+    
+    chnl.consume(this.rpcQueue.queue, (result) => {
+      this.emit(result.properties.correlationId, result);
+    }, { noAck: true });
+  }
+  
 }

@@ -1,120 +1,45 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
-import { Queue } from './queue';
+import { Injectable } from 'injection-js';
 
-/**
- * RabbitMQ Client
- * 
- * @export
- * @class Rabbit
- * @extends {EventEmitter}
- */
-export class Rabbit extends EventEmitter {
+@Injectable()
+export class AmqpClient extends EventEmitter {
 
+  connection: any;
   channel: any;
-  connection: amqp.Connection;
-  queues: any = {};
-  options: any;
-  middlewares: any[] = [];
+  uri: string;
 
-  constructor(options: any = {}) {
-    super();
+  async connect(uri: string = 'amqp://localhost:5672'): Promise<void> {
+    this.uri = uri;
 
-    this.options = Object.assign({
-      url: 'amqp://localhost:5672'
-    }, options);
-  }
-
-  async connect() {
-    if(this.connection) return this.connection;
-
-    const connectionStr = this.options.url;
-    this.connection = await this.createConnection(connectionStr);
-    this.channel = await this.createChannel(this.connection);
-
-    this.channel.consume('amq.rabbitmq.reply-to', (result) => {
-      this.emit(result.properties.correlationId, result);
-    }, { noAck: true });
-
+    this.connection = await this.createConnection(this.uri);
+    this.channel = await this.connection.createConfirmChannel();
+    this.emit('connected');
     return this.connection;
   }
 
-  async reconnect() {
+  async reconnect(): Promise<any> {
     await this.disconnect();
-    return this.connect();
+    return this.connect(this.uri);
   }
 
-  use(middleware: any) {
-    this.middlewares.push(middleware);
-  }
-
-  disconnect() {
-    return this.connection.close();
-  }
-
-  async subscribe(name: string, callback: Function, options: any = {}) {
-    const queue = await this.queue(name);
-    return queue.subscribe(callback, options);
-  }
-
-  async purge(name) {
-    const queue = await this.queues(name);
-    return queue.purge();
-  }
-
-  async unsubscribe(name) {
-    const queue = await this.queues(name);
-    return queue.unsubscribe();
-  }
-
-  async publish(name: string, message: any, options: any = {}) {
-    const queue = await this.queue(name);
-    return queue.publish(message, options);
-  }
-
-  queue(name: string, options: any = {},  ...middlewares: any[]): Promise<any> {
-    if(!this.queues[name]) {
-      this.queues[name] = new Promise(async resolve => {
-        const conn = await this.connection;
-        const chnl = await this.channel;
-
-        const mw = this.middlewares;
-        if(middlewares) mw.concat(middlewares);
-        
-        const queue = new Queue(chnl, name, options, ...mw);
-        await queue.initialize();
-        
-        resolve(queue);
-      });
+  async disconnect(): Promise<any> {
+    if(!this.connection) {
+      throw new Error('No connection established to disconnect from');
     }
 
-    return this.queues[name];
+    const conn = await this.connection;
+    return conn.close();
   }
 
-  async replyOf(correlationId: string): Promise<any> {
-    return new Promise(async (resolve) => {
-
-      this.once(correlationId, async (message) => {
-        let response = message.content;
-        if(this.middlewares) {
-          for(const mw of this.middlewares) {
-            if(mw.subscribe) response = await mw.subscribe(response);
-          }
-        }
-
-        resolve({ message, response });
-      });
-    });
-  }
-
-  private createConnection(connectionStr: string) {
+  private createConnection(uri: string): Promise<any> {
     const operation = retry.operation();
 
     return new Promise((resolve, reject) => {
       operation.attempt(async (attempt) => {
         try {
-          const connection = await amqp.connect(connectionStr);
+          const connection = await amqp.connect(uri);
           connection.once('close', (err) => {
             this.emit('disconnected', err);
           });
@@ -138,12 +63,6 @@ export class Rabbit extends EventEmitter {
         }
       });
     });
-  }
-
-  private async createChannel(connection) {
-    const channel = connection.createConfirmChannel();
-    this.emit('connected');
-    return channel;
   }
 
 }
