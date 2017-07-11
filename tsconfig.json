@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES2015",
     "module": "commonjs",
     "moduleResolution": "node",
     "experimentalDecorators": true,
     "inlineSourceMap": true,
     "inlineSources": true,
     "emitDecoratorMetadata": true,
+    "declaration": true,
     "pretty": true,
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,

@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+require("reflect-metadata");
+const types_1 = require("./types");
+function Queue(props) {
+    return function (target) {
+        Reflect.defineMetadata(types_1.NAME_KEY, props, target.prototype);
+    };
+}
+exports.Queue = Queue;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiZGVjb3JhdG9ycy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uL3NyYy9kZWNvcmF0b3JzLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBQUEsNEJBQTBCO0FBQzFCLG1DQUFpRDtBQUVqRCxlQUFzQixLQUFtQjtJQUN2QyxNQUFNLENBQUMsVUFBUyxNQUFXO1FBQ3pCLE9BQU8sQ0FBQyxjQUFjLENBQUMsZ0JBQVEsRUFBRSxLQUFLLEVBQUUsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDO0lBQzVELENBQUMsQ0FBQztBQUNKLENBQUM7QUFKRCxzQkFJQyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCAncmVmbGVjdC1tZXRhZGF0YSc7XG5pbXBvcnQgeyBOQU1FX0tFWSwgUXVldWVPcHRpb25zIH0gZnJvbSAnLi90eXBlcyc7XG5cbmV4cG9ydCBmdW5jdGlvbiBRdWV1ZShwcm9wczogUXVldWVPcHRpb25zKSB7XG4gIHJldHVybiBmdW5jdGlvbih0YXJnZXQ6IGFueSkge1xuICAgIFJlZmxlY3QuZGVmaW5lTWV0YWRhdGEoTkFNRV9LRVksIHByb3BzLCB0YXJnZXQucHJvdG90eXBlKTtcbiAgfTtcbn1cbiJdfQ==
