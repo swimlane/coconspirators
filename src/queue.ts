@@ -33,20 +33,24 @@ export class AmqpQueue<T> extends EventEmitter {
 
   async subscribe(callback: (message: T) => {}, options: SubscribeOptions = {}): Promise<any> {
     const chnl = await this.client.channel;
-    const opts = { ...this.options, ...options };
+    const opts: SubscribeOptions = { ...this.options, ...options };
+
+    if (options.prefetch) {
+      chnl.prefetch(options.prefetch);
+    }
 
     return chnl.consume(this.options.name, async (message: amqp.Message) => {
       if(opts.contentType === 'application/json') {
         message.content = JSON.parse(message.content.toString());
       }
 
-      message.reply = (content: any, replyOptions: ReplyOptions = {}) => {
+      (message as T).reply = (content: any, replyOptions: ReplyOptions = {}) => {
         replyOptions.replyTo = message.properties.replyTo;
         replyOptions.correlationId = message.properties.correlationId;
         return this.reply(content, replyOptions);
       };
 
-      message.ack = () => {
+      (message as T).ack = () => {
         this.ack(message);
       };
 
