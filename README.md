@@ -31,12 +31,16 @@ export class AmqpServer {
   }
 }
 
+interface ZooMessage {
+  animal: string;
+}
+
 @Injectable()
 @Queue({
   name: 'health'
   contentType: 'application/json'
 })
-export class HealthQueue extends AmqpQueue<any> {
+export class HealthQueue extends AmqpQueue<ZooMessage> {
   constructor(client: AmqpClient) { super(client); }
 }
 
@@ -44,7 +48,7 @@ export class HealthQueue extends AmqpQueue<any> {
 export class HealthChecker {
   constructor(queue: HealthQueue) {
     this.queue.publish({ hi: true });
-    this.queue.subscribe((message) => {
+    this.queue.subscribe((message: ZooMessage) => {
       console.log('message', message);
     })
   }
