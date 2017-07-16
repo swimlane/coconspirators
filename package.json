@@ -28,8 +28,10 @@
   },
   "homepage": "https://github.com/swimlane/coconspirators#readme",
   "devDependencies": {
-    "tslint": "^4.4.2",
+    "@types/amqplib": "^0.5.3",
     "@types/node": "^7.0.5",
+    "@types/shortid": "0.0.29",
+    "tslint": "^4.4.2",
     "tslint-config-swimlane": "^2.0.1",
     "typescript": "^2.1.6"
   },
