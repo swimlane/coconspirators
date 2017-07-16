@@ -50,7 +50,7 @@ export class AmqpClient extends EventEmitter {
           });
 
           process.on('SIGINT', () => {
-            connection.close(() => {
+            connection.close().then(() => {
               this.emit('disconnected');
               process.exit(0);
             });
