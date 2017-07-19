@@ -44,13 +44,13 @@ export class AmqpQueue<T> extends EventEmitter {
         message.content = JSON.parse(message.content.toString());
       }
 
-      (message as T).reply = (content: any, replyOptions: ReplyOptions = {}) => {
+      message.reply = (content: any, replyOptions: ReplyOptions = {}) => {
         replyOptions.replyTo = message.properties.replyTo;
         replyOptions.correlationId = message.properties.correlationId;
         return this.reply(content, replyOptions);
       };
 
-      (message as T).ack = () => {
+      message.ack = () => {
         this.ack(message);
       };
 
