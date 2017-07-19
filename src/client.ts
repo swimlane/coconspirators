@@ -59,6 +59,7 @@ export class AmqpClient extends EventEmitter {
           resolve(connection);
         } catch(e) {
           if(operation.retry(e)) return;
+          this.emit('error', e);
           reject(e);
         }
       });
