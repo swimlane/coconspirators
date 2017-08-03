@@ -4,8 +4,10 @@ export declare class AmqpClient extends EventEmitter {
     connection: any;
     channel: any;
     uri: string;
-    connect(uri?: string): Promise<void>;
+    constructor();
+    connect(uri?: string): Promise<any>;
     reconnect(): Promise<any>;
     disconnect(): Promise<any>;
+    private createChannel();
     private createConnection(uri);
 }
