@@ -28,7 +28,7 @@ export class AmqpQueue<T> extends EventEmitter {
   constructor(private client: AmqpClient, options?: any) {
     super();
     if(options) this._options = options;
-    this.createQueue();
+    this.queue = this.createQueue();
   }
 
   async subscribe(callback: (message: T) => {}, options: SubscribeOptions = {}): Promise<any> {
@@ -125,14 +125,19 @@ export class AmqpQueue<T> extends EventEmitter {
     return chnl.purgeQueue(this.options.name);
   }
 
-  private async createQueue(): Promise<void> {
-    const channel = await this.client.channel;
-    const chnl = await this.client.channel;
-    const queue = await chnl.assertQueue(this.options.name, this.options);
+  private createQueue(): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const conn = await this.client.connection;
+        const chnl = await this.client.channel;
+        const queue = await chnl.assertQueue(this.options.name, this.options);
 
-    await this.consumeReplies();
-    
-    return queue;
+        await this.consumeReplies();
+        resolve(queue);
+      } catch(e) {
+        reject(e);
+      }
+    });
   }
 
   private async consumeReplies(): Promise<void> {
