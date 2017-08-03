@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
 import { Injectable } from 'injection-js';
+import { defer } from './util';
 
 @Injectable()
 export class AmqpClient extends EventEmitter {
@@ -10,12 +11,18 @@ export class AmqpClient extends EventEmitter {
   channel: any;
   uri: string;
 
-  async connect(uri: string = 'amqp://localhost:5672'): Promise<void> {
+  constructor() {
+    super();
+    this.connection = defer();
+    this.channel = defer();
+  }
+
+  connect(uri: string = 'amqp://localhost:5672'): Promise<any> {
     this.uri = uri;
 
-    this.connection = await this.createConnection(this.uri);
-    this.channel = await this.connection.createConfirmChannel();
-    this.emit('connected');
+    this.createConnection(this.uri);
+    this.createChannel();
+
     return this.connection;
   }
 
@@ -33,36 +40,41 @@ export class AmqpClient extends EventEmitter {
     return conn.close();
   }
 
-  private createConnection(uri: string): Promise<any> {
+  private async createChannel(): Promise<void> {
+    const connection = await this.connection;
+    const channel = await connection.createConfirmChannel();
+    this.channel.resolve(channel);
+  }
+
+  private createConnection(uri: string): void {
     const operation = retry.operation();
 
-    return new Promise((resolve, reject) => {
-      operation.attempt(async (attempt) => {
-        try {
-          const connection = await amqp.connect(uri);
-          connection.once('close', (err) => {
-            this.emit('disconnected', err);
-          });
+    operation.attempt(async (attempt) => {
+      try {
+        const connection = await amqp.connect(uri);
+        connection.once('close', (err) => {
+          this.emit('disconnected', err);
+        });
 
-          connection.on('error', (err) => {
-            this.emit('error', err);
-            this.emit('disconnected', err);
-          });
+        connection.on('error', (err) => {
+          this.emit('error', err);
+          this.emit('disconnected', err);
+        });
 
-          process.on('SIGINT', () => {
-            connection.close().then(() => {
-              this.emit('disconnected');
-              process.exit(0);
-            });
+        process.on('SIGINT', () => {
+          connection.close().then(() => {
+            this.emit('disconnected');
+            process.exit(0);
           });
+        });
 
-          resolve(connection);
-        } catch(e) {
-          if(operation.retry(e)) return;
-          this.emit('error', e);
-          reject(e);
-        }
-      });
+        this.emit('connected');
+        this.connection.resolve(connection);
+      } catch(e) {
+        if(operation.retry(e)) return;
+        this.emit('error', e);
+        this.connection.reject(e);
+      }
     });
   }
 
