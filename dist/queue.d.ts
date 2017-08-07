@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import { EventEmitter } from 'events';
 import { AmqpClient } from './client';
-import { PublishOptions, SubscribeOptions, ReplyOptions } from './types';
+import { QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions } from './types';
 import * as amqp from 'amqplib';
 export declare class AmqpQueue<T> extends EventEmitter {
     private client;
@@ -10,7 +10,7 @@ export declare class AmqpQueue<T> extends EventEmitter {
     rpcQueue: any;
     private readonly options;
     private _options;
-    constructor(client: AmqpClient);
+    constructor(client: AmqpClient, options?: QueueOptions);
     subscribe(callback: (message: T) => {}, options?: SubscribeOptions): Promise<any>;
     publish(content: any, options?: PublishOptions): Promise<any>;
     replyOf(idOrMessage: string | any): Promise<any>;

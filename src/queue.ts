@@ -23,8 +23,9 @@ export class AmqpQueue<T> extends EventEmitter {
 
   private _options: QueueOptions;
 
-  constructor(private client: AmqpClient) {
+  constructor(private client: AmqpClient, options?: QueueOptions) {
     super();
+    if(options) this._options = options;
     this.queue = this.createQueue();
   }
 
