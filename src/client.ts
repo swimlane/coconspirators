@@ -1,10 +1,8 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
-import { Injectable } from 'injection-js';
 import { defer } from './util';
 
-@Injectable()
 export class AmqpClient extends EventEmitter {
 
   connection: any;

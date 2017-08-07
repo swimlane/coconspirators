@@ -1,6 +1,6 @@
 {
   "name": "coconspirators",
-  "version": "3.0.5",
+  "version": "3.1.0",
   "description": "RabbitMQ Message Bus Library for TypeScript",
   "main": "index.js",
   "types": "dist/index.d.ts",
@@ -37,7 +37,6 @@
   },
   "dependencies": {
     "amqplib": "^0.5.1",
-    "injection-js": "^2.1.0",
     "reflect-metadata": "^0.1.10",
     "retry": "^0.10.1",
     "shortid": "^2.2.6"

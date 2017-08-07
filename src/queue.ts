@@ -4,9 +4,7 @@ import { AmqpClient } from './client';
 import { NAME_KEY, QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions } from './types';
 import * as amqp from 'amqplib';
 import * as shortid from 'shortid';
-import { Injectable } from 'injection-js';
 
-@Injectable()
 export class AmqpQueue<T> extends EventEmitter {
 
   queue: any;
@@ -25,9 +23,8 @@ export class AmqpQueue<T> extends EventEmitter {
 
   private _options: QueueOptions;
 
-  constructor(private client: AmqpClient, options?: any) {
+  constructor(private client: AmqpClient) {
     super();
-    if(options) this._options = options;
     this.queue = this.createQueue();
   }
 
@@ -39,7 +36,7 @@ export class AmqpQueue<T> extends EventEmitter {
       chnl.prefetch(options.prefetch);
     }
 
-    return chnl.consume(this.options.name, async (message: amqp.Message) => {
+    return chnl.consume(this.options.name, async (message: any) => {
       if(opts.contentType === 'application/json') {
         message.content = JSON.parse(message.content.toString());
       }
@@ -81,7 +78,7 @@ export class AmqpQueue<T> extends EventEmitter {
     };
   }
 
-  async replyOf(idOrMessage: string|any): Promise<amqp.Message> {
+  async replyOf(idOrMessage: string|any): Promise<any> {
     let id = idOrMessage;
     if(typeof id !== 'string') {
       id = idOrMessage.properties.correlationId;

@@ -14,13 +14,9 @@ with RabbitMQ and has best-practices baked in. Features include:
 `npm run build`
 
 ## Usage
-
-### Using DI
 ```javascript
 import { Queue, AmqpQueue, AmqpClient  } from 'coconspirators';
-import { Injectable } from 'injection-js';
 
-@Injectable()
 export class AmqpServer {
   connection: Promise<any>;
   constructor(public client: AmqpClient, logger: Logger) {
@@ -35,7 +31,6 @@ interface ZooMessage {
   animal: string;
 }
 
-@Injectable()
 @Queue({
   name: 'health'
   contentType: 'application/json'
@@ -44,7 +39,6 @@ export class HealthQueue extends AmqpQueue<ZooMessage> {
   constructor(client: AmqpClient) { super(client); }
 }
 
-@Injectable()
 export class HealthChecker {
   constructor(queue: HealthQueue) {
     this.queue.publish({ hi: true });
@@ -53,15 +47,6 @@ export class HealthChecker {
     })
   }
 }
-```
-
-### Without DI
-```javascript
-const client = new AmqpServer();
-const queue = new AmqpQueue(client, {
-  name: `dynamicChannelName`,
-  contentType: 'application/json'
-});
 ```
 
 ## Credits
