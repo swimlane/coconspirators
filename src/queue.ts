@@ -9,23 +9,25 @@ export class AmqpQueue<T> extends EventEmitter {
 
   queue: any;
   rpcQueue: any;
-
-  private get options(): QueueOptions {
-    const opts = this._options ? 
-      this._options : Reflect.getMetadata(NAME_KEY, this);
-
-    return {
-      durable: false,
-      noAck: true,
-      ...opts 
-    };
-  }
-
-  private _options: QueueOptions;
+  options: QueueOptions = {
+    durable: false,
+    noAck: true
+  };
 
   constructor(private client: AmqpClient, options?: QueueOptions) {
     super();
-    if(options) this._options = options;
+
+    // if decorated, get decorations and merge
+    const metadata = Reflect.getMetadata(NAME_KEY, this);
+    if(metadata) {
+      Object.assign(this.options, metadata);
+    }
+
+    // if options passed in manually, extend options
+    if(options) {
+      Object.assign(this.options, options);
+    }
+
     this.queue = this.createQueue();
   }
 

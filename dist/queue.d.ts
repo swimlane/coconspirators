@@ -8,8 +8,7 @@ export declare class AmqpQueue<T> extends EventEmitter {
     private client;
     queue: any;
     rpcQueue: any;
-    private readonly options;
-    private _options;
+    options: QueueOptions;
     constructor(client: AmqpClient, options?: QueueOptions);
     subscribe(callback: (message: T) => {}, options?: SubscribeOptions): Promise<any>;
     publish(content: any, options?: PublishOptions): Promise<any>;
