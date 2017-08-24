@@ -6,6 +6,7 @@ export interface QueueOptions {
     prefetch?: number;
     rpc?: boolean;
     noAck?: boolean;
+    exclusive?: boolean;
 }
 export interface SubscribeOptions {
     contentType?: string;
