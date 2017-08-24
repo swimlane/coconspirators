@@ -144,7 +144,9 @@ export class AmqpQueue<T> extends EventEmitter {
     if(!this.options.rpc) return;
 
     const chnl = await this.client.channel;
-    this.rpcQueue = await chnl.assertQueue('', { exclusive: true });
+    this.rpcQueue = await chnl.assertQueue('', { 
+      exclusive: this.options.exclusive 
+    });
     
     chnl.consume(this.rpcQueue.queue, (result) => {
       this.emit(result.properties.correlationId, result);
