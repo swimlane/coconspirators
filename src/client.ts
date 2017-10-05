@@ -1,21 +1,33 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
-import { defer } from './util';
+import { defer, ExternalDeferPromise } from './util';
 
 export class AmqpClient extends EventEmitter {
 
-  connection: any;
-  channel: any;
+  connection: ExternalDeferPromise<amqp.Connection>;
+  channel: ExternalDeferPromise<amqp.ConfirmChannel>;
   uri: string;
 
+  /**
+   * Creates an instance of AmqpClient.
+   *
+   * @memberof AmqpClient
+   */
   constructor() {
     super();
-    this.connection = defer();
-    this.channel = defer();
+    this.connection = defer<amqp.Connection>();
+    this.channel = defer<amqp.ConfirmChannel>();
   }
 
-  connect(uri: string = 'amqp://localhost:5672'): Promise<any> {
+  /**
+   * Connect to the queue
+   *
+   * @param {string} [uri='amqp://localhost:5672']
+   * @returns {Promise<amqp.Connection>}
+   * @memberof AmqpClient
+   */
+  connect(uri: string = 'amqp://localhost:5672'): Promise<amqp.Connection> {
     this.uri = uri;
 
     this.createConnection(this.uri);
@@ -24,12 +36,24 @@ export class AmqpClient extends EventEmitter {
     return this.connection;
   }
 
-  async reconnect(): Promise<any> {
+  /**
+   * Reconnect to the queue
+   *
+   * @returns {Promise<amqp.Connection>}
+   * @memberof AmqpClient
+   */
+  async reconnect(): Promise<amqp.Connection> {
     await this.disconnect();
     return this.connect(this.uri);
   }
 
-  async disconnect(): Promise<any> {
+  /**
+   * Disconnect from the queue
+   *
+   * @returns {Promise<void>}
+   * @memberof AmqpClient
+   */
+  async disconnect(): Promise<void> {
     if(!this.connection) {
       throw new Error('No connection established to disconnect from');
     }
@@ -38,12 +62,26 @@ export class AmqpClient extends EventEmitter {
     return conn.close();
   }
 
+  /**
+   * Create a channel
+   *
+   * @private
+   * @returns {Promise<void>}
+   * @memberof AmqpClient
+   */
   private async createChannel(): Promise<void> {
     const connection = await this.connection;
     const channel = await connection.createConfirmChannel();
     this.channel.resolve(channel);
   }
 
+  /**
+   * Create a connection
+   *
+   * @private
+   * @param {string} uri
+   * @memberof AmqpClient
+   */
   private createConnection(uri: string): void {
     const operation = retry.operation();
 
