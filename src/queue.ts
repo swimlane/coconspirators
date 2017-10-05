@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { EventEmitter } from 'events';
 import { AmqpClient } from './client';
 import { NAME_KEY, QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions } from './types';
@@ -144,13 +143,13 @@ export class AmqpQueue<T> extends EventEmitter {
     if(!this.options.rpc) return;
 
     const chnl = await this.client.channel;
-    this.rpcQueue = await chnl.assertQueue('', { 
-      exclusive: this.options.exclusive 
+    this.rpcQueue = await chnl.assertQueue('', {
+      exclusive: this.options.exclusive
     });
-    
+
     chnl.consume(this.rpcQueue.queue, (result) => {
       this.emit(result.properties.correlationId, result);
     }, { noAck: true });
   }
-  
+
 }

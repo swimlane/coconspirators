@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { NAME_KEY, QueueOptions } from './types';
 
 export function Queue(props: QueueOptions) {
