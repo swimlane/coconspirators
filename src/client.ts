@@ -1,12 +1,11 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
-import { defer, ExternalDeferPromise } from './util';
 
 export class AmqpClient extends EventEmitter {
 
-  connection: ExternalDeferPromise<amqp.Connection>;
-  channel: ExternalDeferPromise<amqp.ConfirmChannel>;
+  connection: Promise<amqp.Connection>;
+  channel: Promise<amqp.ConfirmChannel>;
   uri: string;
 
   /**
@@ -16,8 +15,8 @@ export class AmqpClient extends EventEmitter {
    */
   constructor() {
     super();
-    this.connection = defer<amqp.Connection>();
-    this.channel = defer<amqp.ConfirmChannel>();
+    this.connection = Promise.reject(new Error('Connection has not been established'));
+    this.channel = Promise.reject(new Error('Connection has not been established'));
   }
 
   /**
@@ -30,8 +29,8 @@ export class AmqpClient extends EventEmitter {
   connect(uri: string = 'amqp://localhost:5672'): Promise<amqp.Connection> {
     this.uri = uri;
 
-    this.createConnection(this.uri);
-    this.createChannel();
+    this.connection = this.createConnection(this.uri);
+    this.channel = this.createChannel();
 
     return this.connection;
   }
@@ -66,13 +65,20 @@ export class AmqpClient extends EventEmitter {
    * Create a channel
    *
    * @private
-   * @returns {Promise<void>}
+   * @returns {Promise<amqp.ConfirmChannel>}
    * @memberof AmqpClient
    */
-  private async createChannel(): Promise<void> {
-    const connection = await this.connection;
-    const channel = await connection.createConfirmChannel();
-    this.channel.resolve(channel);
+  private async createChannel(): Promise<amqp.ConfirmChannel> {
+    return new Promise<amqp.ConfirmChannel>(async (resolve, reject) => {
+      const connection = await this.connection;
+      try {
+        const channel = await connection.createConfirmChannel();
+        resolve(channel);
+      } catch (err) {
+        this.emit(err);
+        reject(err);
+      }
+    });
   }
 
   /**
@@ -80,38 +86,40 @@ export class AmqpClient extends EventEmitter {
    *
    * @private
    * @param {string} uri
+   * @returns {Promise<amqp.Connection>}
    * @memberof AmqpClient
    */
-  private createConnection(uri: string): void {
-    const operation = retry.operation();
+  private createConnection(uri: string): Promise<amqp.Connection> {
+    return new Promise<amqp.Connection>((resolve, reject) => {
+      const operation = retry.operation();
 
-    operation.attempt(async (attempt) => {
-      try {
-        const connection = await amqp.connect(uri);
-        connection.once('close', (err) => {
-          this.emit('disconnected', err);
-        });
-
-        connection.on('error', (err) => {
-          this.emit('error', err);
-          this.emit('disconnected', err);
-        });
-
-        process.on('SIGINT', () => {
-          connection.close().then(() => {
-            this.emit('disconnected');
-            process.exit(0);
+      operation.attempt(async (attempt) => {
+        try {
+          const connection = await amqp.connect(uri);
+          connection.once('close', (err) => {
+            this.emit('disconnected', err);
           });
-        });
 
-        this.emit('connected');
-        this.connection.resolve(connection);
-      } catch(e) {
-        if(operation.retry(e)) return;
-        this.emit('error', e);
-        this.connection.reject(e);
-      }
+          connection.on('error', (err) => {
+            this.emit('error', err);
+            this.emit('disconnected', err);
+          });
+
+          process.on('SIGINT', () => {
+            connection.close().then(() => {
+              this.emit('disconnected');
+              process.exit(0);
+            });
+          });
+
+          this.emit('connected');
+          resolve(connection);
+        } catch(e) {
+          if(operation.retry(e)) return;
+          this.emit('error', e);
+          reject(e);
+        }
+      });
     });
   }
-
 }
