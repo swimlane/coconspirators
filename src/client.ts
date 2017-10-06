@@ -16,7 +16,12 @@ export class AmqpClient extends EventEmitter {
   constructor() {
     super();
     this.connection = Promise.reject(new Error('Connection has not been established'));
-    this.channel = Promise.reject(new Error('Connection has not been established'));
+    this.channel = Promise.reject(new Error('Channel has not been established'));
+
+    // Handle the rejections so node doesn't have to
+    // These promises get replaced but node still tracks if they are handled
+    this.connection.catch((err) => true);
+    this.channel.catch((err) => true);
   }
 
   /**
@@ -53,10 +58,6 @@ export class AmqpClient extends EventEmitter {
    * @memberof AmqpClient
    */
   async disconnect(): Promise<void> {
-    if(!this.connection) {
-      throw new Error('No connection established to disconnect from');
-    }
-
     const conn = await this.connection;
     return conn.close();
   }
