@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "test": "npm run lint && npm run test:unit",
-    "test:unit": "mocha --compilers ts:ts-node/register ./tests/**/*.spec.ts -R spec --bail",
+    "test:unit": "mocha --require ts-node/register ./tests/**/*.spec.ts -R spec --bail",
     "test:cov": "nyc npm run test:unit",
     "test:report": "cat ./coverage/lcov.info | codacy-coverage --language typescript",
     "lint": "tslint ./{src,tests}/{,**/}*.ts"
