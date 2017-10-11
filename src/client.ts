@@ -27,14 +27,21 @@ export class AmqpClient extends EventEmitter {
   /**
    * Connect to the queue
    *
-   * @param {string} [uri='amqp://localhost:5672']
+   * @param {string} [uri='amqp://localhost:5672'] uri to amqp server
+   * @param {amqp.Connection} conn an already established connection
    * @returns {Promise<amqp.Connection>}
    * @memberof AmqpClient
    */
-  connect(uri: string = 'amqp://localhost:5672'): Promise<amqp.Connection> {
+  connect(uri: string = 'amqp://localhost:5672', conn?: amqp.Connection): Promise<amqp.Connection> {
     this.uri = uri;
+    if (conn === undefined) {
+      this.connection = this.createConnection(this.uri);
+    } else {
+      this.connection = Promise.resolve(conn);
+    }
 
-    this.connection = this.createConnection(this.uri);
+    this.setupListeners();
+
     this.channel = this.createChannel();
 
     return this.connection;
@@ -97,29 +104,40 @@ export class AmqpClient extends EventEmitter {
       operation.attempt(async (attempt) => {
         try {
           const connection = await amqp.connect(uri);
-          connection.once('close', (err) => {
-            this.emit('disconnected', err);
-          });
-
-          connection.on('error', (err) => {
-            this.emit('error', err);
-            this.emit('disconnected', err);
-          });
-
-          process.on('SIGINT', () => {
-            connection.close().then(() => {
-              this.emit('disconnected');
-              process.exit(0);
-            });
-          });
-
           this.emit('connected');
+
           resolve(connection);
         } catch(e) {
           if(operation.retry(e)) return;
           this.emit('error', e);
           reject(e);
         }
+      });
+    });
+  }
+
+  /**
+   * Setup listeners to connection events
+   *
+   * @private
+   * @returns {Promise<void>}
+   * @memberof AmqpClient
+   */
+  private async setupListeners(): Promise<void> {
+    const connection = await this.connection;
+    connection.once('close', (err) => {
+      this.emit('disconnected', err);
+    });
+
+    connection.on('error', (err) => {
+      this.emit('error', err);
+      this.emit('disconnected', err);
+    });
+
+    process.on('SIGINT', () => {
+      connection.close().then(() => {
+        this.emit('disconnected');
+        process.exit(0);
       });
     });
   }
