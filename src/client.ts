@@ -28,11 +28,14 @@ export class AmqpClient extends EventEmitter {
    * Connect to the queue
    *
    * @param {string} [uri='amqp://localhost:5672'] uri to amqp server
-   * @param {amqp.Connection} conn an already established connection
+   * @param {amqp.Connection|Promise<amqp.Connection>} conn an already established connection or Promise to one
    * @returns {Promise<amqp.Connection>}
    * @memberof AmqpClient
    */
-  connect(uri: string = 'amqp://localhost:5672', conn?: amqp.Connection): Promise<amqp.Connection> {
+  connect(
+    uri: string = 'amqp://localhost:5672',
+    conn?: amqp.Connection|Promise<amqp.Connection>
+  ): Promise<amqp.Connection> {
     this.uri = uri;
     if (conn === undefined) {
       this.connection = this.createConnection(this.uri);
