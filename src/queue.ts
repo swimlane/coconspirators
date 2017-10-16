@@ -6,8 +6,8 @@ import * as shortid from 'shortid';
 
 export class AmqpQueue<T> extends EventEmitter {
 
-  queue: any;
-  rpcQueue: any;
+  queue: Promise<amqp.Replies.AssertQueue>;
+  rpcQueue: Promise<amqp.Replies.AssertQueue>;
   options: QueueOptions = {
     durable: false,
     noAck: true
@@ -89,7 +89,7 @@ export class AmqpQueue<T> extends EventEmitter {
     if(this.rpcQueue) {
       const correlationId = shortid.generate();
       opts.correlationId = correlationId;
-      opts.replyTo = this.rpcQueue.queue;
+      opts.replyTo = (await this.rpcQueue).queue;
     }
 
     if(opts.contentType === 'application/json') {
@@ -108,15 +108,12 @@ export class AmqpQueue<T> extends EventEmitter {
   /**
    * Reply to a message by id or message
    *
-   * @param {(string|any)} idOrMessage
+   * @param {(string|amqp.Message)} idOrMessage
    * @returns {Promise<amqp.Message>}
    * @memberof AmqpQueue
    */
-  async replyOf(idOrMessage: string|any): Promise<amqp.Message> {
-    let id = idOrMessage;
-    if(typeof id !== 'string') {
-      id = idOrMessage.properties.correlationId;
-    }
+  async replyOf(idOrMessage: string|amqp.Message): Promise<amqp.Message> {
+    const id = typeof idOrMessage !== 'string' ? (idOrMessage as amqp.Message).properties.correlationId : idOrMessage;
 
     return new Promise<amqp.Message>((resolve, reject) => {
       this.once(id, (message: amqp.Message) => {
@@ -210,11 +207,14 @@ export class AmqpQueue<T> extends EventEmitter {
     if(!this.options.rpc) return;
 
     const chnl = await this.client.channel;
-    this.rpcQueue = await chnl.assertQueue('', {
-      exclusive: this.options.exclusive
+    // Wrap Bluebird in native Promise
+    this.rpcQueue = new Promise<amqp.Replies.AssertQueue>((resolve, reject) => {
+      chnl.assertQueue('', {
+        exclusive: this.options.exclusive
+      }).then(resolve, reject);
     });
 
-    chnl.consume(this.rpcQueue.queue, (result) => {
+    chnl.consume((await this.rpcQueue).queue, (result) => {
       this.emit(result.properties.correlationId, result);
     }, { noAck: true });
   }
