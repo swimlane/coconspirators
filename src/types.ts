@@ -1,3 +1,5 @@
+import { Message } from 'amqplib';
+
 export const NAME_KEY = 'name';
 
 export interface QueueOptions {
@@ -25,4 +27,9 @@ export interface PublishOptions {
 export interface ReplyOptions {
   replyTo?: string;
   correlationId?: string;
+}
+
+export interface ReplyableMessage extends Message {
+  reply?: (content: any, replyOptions: ReplyOptions) => any;
+  ack?: () => void;
 }
