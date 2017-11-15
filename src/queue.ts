@@ -98,7 +98,16 @@ export class AmqpQueue<T> extends EventEmitter {
       content = new Buffer(json);
     }
 
-    chnl.publish(this.options.exchange, options.routingKey || this.options.name, content, opts);
+    const exchange = options.exchangeOverride === '' || options.exchangeOverride ?
+      options.exchangeOverride :
+      this.options.exchange;
+
+    chnl.publish(
+      exchange,
+      options.routingKey || this.options.name,
+      content,
+      opts
+    );
 
     return {
       content,

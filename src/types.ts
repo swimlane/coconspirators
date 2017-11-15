@@ -23,6 +23,7 @@ export interface SubscribeOptions {
 
 export interface PublishOptions {
   routingKey?: string;
+  exchangeOverride?: string;
   expiration?: string;
   userId?: string;
   CC?: string | string[];
