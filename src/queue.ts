@@ -9,6 +9,7 @@ export class AmqpQueue<T> extends EventEmitter {
   queue: Promise<amqp.Replies.AssertQueue>;
   rpcQueue: Promise<amqp.Replies.AssertQueue>;
   options: QueueOptions = {
+    exchange: '',
     durable: false,
     noAck: true
   };
@@ -82,13 +83,13 @@ export class AmqpQueue<T> extends EventEmitter {
    * @returns {Promise<{ content: any; properties: PublishOptions }>}
    * @memberof AmqpQueue
    */
+  // tslint:disable-next-line:max-line-length
   async publish(content: any, options: PublishOptions = {}): Promise<{ content: any; properties: PublishOptions }> {
     const chnl = await this.client.channel;
     const opts: any = { ...this.options, ...options};
 
     if(this.rpcQueue) {
-      const correlationId = shortid.generate();
-      opts.correlationId = correlationId;
+      opts.correlationId = shortid.generate();
       opts.replyTo = (await this.rpcQueue).queue;
     }
 
@@ -97,7 +98,7 @@ export class AmqpQueue<T> extends EventEmitter {
       content = new Buffer(json);
     }
 
-    chnl.sendToQueue(this.options.name, content, opts);
+    chnl.publish(this.options.exchange, options.routingKey || this.options.name, content, opts);
 
     return {
       content,
