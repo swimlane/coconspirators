@@ -153,6 +153,46 @@ export class AmqpQueue<T> extends EventEmitter {
   }
 
   /**
+   * Bind queue to exchange
+   *
+   * @param {string} queue
+   * @param {string} routingKey
+   * @param {*} [opts={}]
+   * @memberOf AmqpQueue
+   */
+  async bindQueue(queue: string, routingKey: string, opts: any = {}) {
+    const chnl = await this.client.channel;
+
+    await chnl.bindQueue(queue, this.options.exchange, routingKey, opts);
+
+    return {
+      queue,
+      exchange: this.options.exchange,
+      routingKey
+    };
+  }
+
+  /**
+   * Unbind queue from exchange
+   *
+   * @param {string} queue
+   * @param {string} routingKey
+   * @param {*} [opts={}]
+   * @memberOf AmqpQueue
+   */
+  async unbindQueue(queue: string, routingKey: string, opts: any = {}) {
+    const chnl = await this.client.channel;
+
+    await chnl.unbindQueue(queue, this.options.exchange, routingKey, opts);
+
+    return {
+      queue,
+      exchange: this.options.exchange,
+      routingKey
+    };
+  }
+
+  /**
    * Acknowledge a message
    *
    * @param {amqp.Message} message
