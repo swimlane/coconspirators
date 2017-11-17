@@ -4,6 +4,7 @@ export const NAME_KEY = 'name';
 
 export interface QueueOptions {
   name?: string;
+  exchange?: string;
   contentType?: string;
   durable?: boolean;
   prefetch?: number;
@@ -21,7 +22,16 @@ export interface SubscribeOptions {
 }
 
 export interface PublishOptions {
+  routingKey?: string;
+  exchangeOverride?: string;
+  expiration?: string;
+  userId?: string;
+  CC?: string | string[];
+  priority?: number;
   persistent?: boolean;
+  deliveryMode?: 1 | 2;
+  mandatory?: boolean;
+  BCC?: string | string[];
 }
 
 export interface ReplyOptions {

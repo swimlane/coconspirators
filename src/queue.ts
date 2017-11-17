@@ -9,6 +9,7 @@ export class AmqpQueue<T> extends EventEmitter {
   queue: Promise<amqp.Replies.AssertQueue>;
   rpcQueue: Promise<amqp.Replies.AssertQueue>;
   options: QueueOptions = {
+    exchange: '',
     durable: false,
     noAck: true
   };
@@ -87,8 +88,7 @@ export class AmqpQueue<T> extends EventEmitter {
     const opts: any = { ...this.options, ...options};
 
     if(this.rpcQueue) {
-      const correlationId = shortid.generate();
-      opts.correlationId = correlationId;
+      opts.correlationId = shortid.generate();
       opts.replyTo = (await this.rpcQueue).queue;
     }
 
@@ -97,7 +97,16 @@ export class AmqpQueue<T> extends EventEmitter {
       content = new Buffer(json);
     }
 
-    chnl.sendToQueue(this.options.name, content, opts);
+    const exchange = options.exchangeOverride === '' || options.exchangeOverride ?
+      options.exchangeOverride :
+      this.options.exchange;
+
+    chnl.publish(
+      exchange,
+      options.routingKey || this.options.name,
+      content,
+      opts
+    );
 
     return {
       content,
@@ -148,6 +157,46 @@ export class AmqpQueue<T> extends EventEmitter {
     return {
       content,
       properties: options
+    };
+  }
+
+  /**
+   * Bind queue to exchange
+   *
+   * @param {string} queue
+   * @param {string} routingKey
+   * @param {*} [opts={}]
+   * @memberOf AmqpQueue
+   */
+  async bindQueue(queue: string, routingKey: string, opts: any = {}) {
+    const chnl = await this.client.channel;
+
+    await chnl.bindQueue(queue, this.options.exchange, routingKey, opts);
+
+    return {
+      queue,
+      exchange: this.options.exchange,
+      routingKey
+    };
+  }
+
+  /**
+   * Unbind queue from exchange
+   *
+   * @param {string} queue
+   * @param {string} routingKey
+   * @param {*} [opts={}]
+   * @memberOf AmqpQueue
+   */
+  async unbindQueue(queue: string, routingKey: string, opts: any = {}) {
+    const chnl = await this.client.channel;
+
+    await chnl.unbindQueue(queue, this.options.exchange, routingKey, opts);
+
+    return {
+      queue,
+      exchange: this.options.exchange,
+      routingKey
     };
   }
 
