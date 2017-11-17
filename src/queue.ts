@@ -83,7 +83,6 @@ export class AmqpQueue<T> extends EventEmitter {
    * @returns {Promise<{ content: any; properties: PublishOptions }>}
    * @memberof AmqpQueue
    */
-  // tslint:disable-next-line:max-line-length
   async publish(content: any, options: PublishOptions = {}): Promise<{ content: any; properties: PublishOptions }> {
     const chnl = await this.client.channel;
     const opts: any = { ...this.options, ...options};
