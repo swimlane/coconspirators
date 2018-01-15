@@ -141,6 +141,10 @@ export class AmqpClient extends EventEmitter {
       connection.close().then(() => {
         this.emit('disconnected');
         process.exit(0);
+      }, (err) => {
+        this.emit('error', err);
+        this.emit('disconnected', err);
+        process.exit(1);
       });
     });
   }
