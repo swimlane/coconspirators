@@ -1,4 +1,5 @@
 import { Message } from 'amqplib';
+import { AmqpClient } from '.';
 
 export const NAME_KEY = 'name';
 
@@ -11,6 +12,24 @@ export interface QueueOptions {
   rpc?: boolean;
   noAck?: boolean;
   exclusive?: boolean;
+}
+
+export interface ExchangeOptions {
+  name: string;
+  type: ExchangeType;
+  contentType?: string;
+  durable?: boolean;
+  autoDelete?: boolean;
+  internal?: boolean;
+  alternateExchange?: string;
+  arguments?: any;
+}
+
+export enum ExchangeType {
+  direct = 'direct',
+  fanout = 'fanout',
+  headers = 'headers',
+  topic = 'topic'
 }
 
 export interface SubscribeOptions {
@@ -35,11 +54,12 @@ export interface PublishOptions {
 }
 
 export interface ReplyOptions {
-  replyTo?: string;
+  replyTo: string;
   correlationId?: string;
 }
 
-export interface ReplyableMessage extends Message {
+export interface ReplyableMessage<T = Buffer> extends Message {
   reply?: (content: any, replyOptions: ReplyOptions) => any;
   ack?: () => void;
+  body: T;
 }

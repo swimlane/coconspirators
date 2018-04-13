@@ -4,7 +4,7 @@ import { NAME_KEY, QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions,
 import * as amqp from 'amqplib';
 import * as shortid from 'shortid';
 
-export class AmqpQueue<T> extends EventEmitter {
+export class AmqpQueue<T = Buffer> extends EventEmitter {
 
   queue: Promise<amqp.Replies.AssertQueue>;
   rpcQueue: Promise<amqp.Replies.AssertQueue>;
@@ -46,7 +46,7 @@ export class AmqpQueue<T> extends EventEmitter {
    * @memberof AmqpQueue
    */
   async subscribe(
-    callback: (message: ReplyableMessage) => void,
+    callback: (message: ReplyableMessage<T>) => void,
     options: SubscribeOptions = {}
   ): Promise<amqp.Replies.Consume> {
     const chnl = await this.client.channel;
@@ -56,15 +56,16 @@ export class AmqpQueue<T> extends EventEmitter {
       chnl.prefetch(options.prefetch);
     }
 
-    return chnl.consume(this.options.name, async (message: ReplyableMessage) => {
+    return chnl.consume(this.options.name || '', async (message: ReplyableMessage<T>) => {
       if(opts.contentType === 'application/json') {
-        message.content = JSON.parse(message.content.toString());
+        message.body = JSON.parse(message.content.toString());
       }
 
-      message.reply = (content: any, replyOptions: ReplyOptions = {}) => {
-        replyOptions.replyTo = message.properties.replyTo;
-        replyOptions.correlationId = message.properties.correlationId;
-        return this.reply(content, replyOptions);
+      message.reply = (content: any) => {
+        return this.reply(content, {
+          replyTo: message.properties.replyTo,
+          correlationId: message.properties.correlationId
+        });
       };
 
       message.ack = () => {
@@ -102,8 +103,8 @@ export class AmqpQueue<T> extends EventEmitter {
       this.options.exchange;
 
     chnl.publish(
-      exchange,
-      options.routingKey || this.options.name,
+      exchange || '',
+      options.routingKey || this.options.name || '',
       content,
       opts
     );
@@ -144,7 +145,7 @@ export class AmqpQueue<T> extends EventEmitter {
    * @returns {Promise<{ content: any, properties: ReplyOptions }>}
    * @memberof AmqpQueue
    */
-  async reply(content: any, options: ReplyOptions = {}): Promise<{ content: any, properties: ReplyOptions }> {
+  async reply(content: any, options: ReplyOptions): Promise<{ content: any, properties: ReplyOptions }> {
     const chnl = await this.client.channel;
 
     if(this.options.contentType === 'application/json') {
@@ -171,11 +172,11 @@ export class AmqpQueue<T> extends EventEmitter {
   async bindQueue(queue: string, routingKey: string, opts: any = {}) {
     const chnl = await this.client.channel;
 
-    await chnl.bindQueue(queue, this.options.exchange, routingKey, opts);
+    await chnl.bindQueue(queue, this.options.exchange || '', routingKey, opts);
 
     return {
       queue,
-      exchange: this.options.exchange,
+      exchange: this.options.exchange || '',
       routingKey
     };
   }
@@ -191,11 +192,11 @@ export class AmqpQueue<T> extends EventEmitter {
   async unbindQueue(queue: string, routingKey: string, opts: any = {}) {
     const chnl = await this.client.channel;
 
-    await chnl.unbindQueue(queue, this.options.exchange, routingKey, opts);
+    await chnl.unbindQueue(queue, this.options.exchange || '', routingKey, opts);
 
     return {
       queue,
-      exchange: this.options.exchange,
+      exchange: this.options.exchange || '',
       routingKey
     };
   }
@@ -220,7 +221,7 @@ export class AmqpQueue<T> extends EventEmitter {
    */
   async purge(): Promise<amqp.Replies.PurgeQueue> {
     const chnl = await this.client.channel;
-    return chnl.purgeQueue(this.options.name);
+    return chnl.purgeQueue(this.options.name || '');
   }
 
   /**
@@ -233,9 +234,8 @@ export class AmqpQueue<T> extends EventEmitter {
   private createQueue(): Promise<amqp.Replies.AssertQueue> {
     return new Promise(async (resolve, reject) => {
       try {
-        const conn = await this.client.connection;
         const chnl = await this.client.channel;
-        const queue = await chnl.assertQueue(this.options.name, this.options);
+        const queue = await chnl.assertQueue(this.options.name || '', this.options);
 
         await this.consumeReplies();
         resolve(queue);
@@ -264,7 +264,7 @@ export class AmqpQueue<T> extends EventEmitter {
     });
 
     chnl.consume((await this.rpcQueue).queue, (result) => {
-      this.emit(result.properties.correlationId, result);
+      if (result) this.emit(result.properties.correlationId, result);
     }, { noAck: true });
   }
 
