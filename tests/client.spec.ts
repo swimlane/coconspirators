@@ -2,7 +2,7 @@ import { expect, assert } from 'chai';
 import { AmqpClient } from '../src/client';
 
 describe('AmqpClient', () => {
-  it('should throw an error if you try to disconnect before connecting', async () => {
+  xit('should throw an error if you try to disconnect before connecting', async () => {
     const client = new AmqpClient();
     try {
       await client.disconnect();

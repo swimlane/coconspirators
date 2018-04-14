@@ -1,12 +1,16 @@
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
+import { Deferred } from './deferred';
 
 export class AmqpClient extends EventEmitter {
 
   connection: Promise<amqp.Connection>;
   channel: Promise<amqp.ConfirmChannel>;
   uri: string;
+
+  private deferredConnection: Deferred<amqp.Connection>;
+  private deferredChannel: Deferred<amqp.ConfirmChannel>;
 
   /**
    * Creates an instance of AmqpClient.
@@ -15,13 +19,11 @@ export class AmqpClient extends EventEmitter {
    */
   constructor() {
     super();
-    this.connection = Promise.reject(new Error('Connection has not been established'));
-    this.channel = Promise.reject(new Error('Channel has not been established'));
+    this.deferredConnection = new Deferred<amqp.Connection>();
+    this.connection = this.deferredConnection.promise;
 
-    // Handle the rejections so node doesn't have to
-    // These promises get replaced but node still tracks if they are handled
-    this.connection.catch((err) => true);
-    this.channel.catch((err) => true);
+    this.deferredChannel = new Deferred<amqp.ConfirmChannel>();
+    this.channel = this.deferredChannel.promise;
   }
 
   /**
@@ -38,14 +40,14 @@ export class AmqpClient extends EventEmitter {
   ): Promise<amqp.Connection> {
     this.uri = uri;
     if (conn === undefined) {
-      this.connection = this.createConnection(this.uri);
+      this.deferredConnection.resolve(this.createConnection(this.uri));
     } else {
-      this.connection = Promise.resolve(conn);
+      this.deferredConnection.resolve(conn);
     }
 
     this.setupListeners();
 
-    this.channel = this.createChannel();
+    this.deferredChannel.resolve(this.createChannel());
 
     return this.connection;
   }
