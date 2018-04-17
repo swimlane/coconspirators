@@ -9,6 +9,8 @@ export class AmqpExchange<T> extends EventEmitter {
   name: string;
   options: ExchangeOptions;
 
+  private channel: Promise<amqp.ConfirmChannel>;
+
   /**
    * Creates an instance of AmqpExchange.
    * @param {AmqpClient} client
@@ -30,6 +32,14 @@ export class AmqpExchange<T> extends EventEmitter {
     }
 
     this.name = this.options.name;
+
+    // do we need our own channel?
+    if (this.options.channel) {
+      this.channel = this.client.createChannel(this.options.channel);
+    } else {
+      this.channel = client.channel;
+    }
+
     this.exchange = this.createExchange();
   }
 
@@ -47,7 +57,7 @@ export class AmqpExchange<T> extends EventEmitter {
     routingKey: string = '',
     options: amqp.Options.Publish = {}
   ): Promise<boolean> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
 
     let buf: Buffer;
@@ -74,7 +84,7 @@ export class AmqpExchange<T> extends EventEmitter {
    * @memberof AmqpExchange
    */
   async deleteExchange(options?: amqp.Options.DeleteExchange): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
 
     await chnl.deleteExchange(this.name, options);
@@ -90,7 +100,7 @@ export class AmqpExchange<T> extends EventEmitter {
    * @memberof AmqpExchange
    */
   async bindExchange(destination: string, pattern: string, args?: any): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
     await chnl.bindExchange(destination, this.name, pattern, args);
   }
@@ -106,7 +116,7 @@ export class AmqpExchange<T> extends EventEmitter {
    * @memberof AmqpExchange
    */
   async unbindExchange(destination: string, pattern: string, args?: any): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
     await chnl.unbindExchange(destination, this.name, pattern, args);
   }
@@ -121,7 +131,7 @@ export class AmqpExchange<T> extends EventEmitter {
    * @memberof AmqpExchange
    */
   async bindQueue(queue: string, pattern: string, args?: any): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
     await chnl.bindQueue(queue, this.name, pattern, args);
   }
@@ -137,7 +147,7 @@ export class AmqpExchange<T> extends EventEmitter {
    * @memberof AmqpExchange
    */
   async unbindQueue(queue: string, pattern: string, args?: any): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     await this.exchange; // wait for exchange to be asserted
     await chnl.unbindQueue(queue, this.name, pattern, args);
   }
@@ -152,7 +162,7 @@ export class AmqpExchange<T> extends EventEmitter {
   private createExchange(): Promise<amqp.Replies.AssertExchange> {
     return new Promise(async (resolve, reject) => {
       try {
-        const chnl = await this.client.channel;
+        const chnl = await this.channel;
         const exchange = await chnl.assertExchange(this.options.name, this.options.type, this.options);
 
         resolve(exchange);

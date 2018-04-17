@@ -1,5 +1,4 @@
 import { Message } from 'amqplib';
-import { AmqpClient } from '.';
 
 export const NAME_KEY = 'name';
 
@@ -8,10 +7,14 @@ export interface QueueOptions {
   exchange?: string;
   contentType?: string;
   durable?: boolean;
-  prefetch?: number;
   rpc?: boolean;
   noAck?: boolean;
   exclusive?: boolean;
+  channel?: ChannelOptions;
+}
+
+export interface ChannelOptions {
+  prefetch?: number;
 }
 
 export interface ExchangeOptions {
@@ -23,6 +26,7 @@ export interface ExchangeOptions {
   internal?: boolean;
   alternateExchange?: string;
   arguments?: any;
+  channel?: ChannelOptions;
 }
 
 export enum ExchangeType {

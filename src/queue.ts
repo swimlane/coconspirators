@@ -14,6 +14,8 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
     noAck: true
   };
 
+  private channel: Promise<amqp.ConfirmChannel>;
+
   /**
    * Creates an instance of AmqpQueue.
    * @param {AmqpClient} client
@@ -34,6 +36,13 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
       Object.assign(this.options, options);
     }
 
+    // do we need our own channel?
+    if (this.options.channel) {
+      this.channel = this.client.createChannel(this.options.channel);
+    } else {
+      this.channel = this.client.channel;
+    }
+
     this.queue = this.createQueue();
   }
 
@@ -49,12 +58,8 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
     callback: (message: ReplyableMessage<T>) => void,
     options: SubscribeOptions = {}
   ): Promise<amqp.Replies.Consume> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     const opts: any = { ...this.options, ...options };
-
-    if (options.prefetch) {
-      chnl.prefetch(options.prefetch);
-    }
 
     return chnl.consume(this.options.name || '', async (message: ReplyableMessage<T>) => {
       if(opts.contentType === 'application/json') {
@@ -85,7 +90,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberof AmqpQueue
    */
   async publish(content: any, options: PublishOptions = {}): Promise<{ content: any; properties: PublishOptions }> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     const opts: any = { ...this.options, ...options};
 
     if(this.rpcQueue) {
@@ -146,7 +151,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberof AmqpQueue
    */
   async reply(content: any, options: ReplyOptions): Promise<{ content: any, properties: ReplyOptions }> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
 
     if(this.options.contentType === 'application/json') {
       const json = JSON.stringify(content);
@@ -170,7 +175,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberOf AmqpQueue
    */
   async bindQueue(queue: string, routingKey: string, opts: any = {}) {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
 
     await chnl.bindQueue(queue, this.options.exchange || '', routingKey, opts);
 
@@ -190,7 +195,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberOf AmqpQueue
    */
   async unbindQueue(queue: string, routingKey: string, opts: any = {}) {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
 
     await chnl.unbindQueue(queue, this.options.exchange || '', routingKey, opts);
 
@@ -209,7 +214,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberof AmqpQueue
    */
   async ack(message: amqp.Message): Promise<void> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     chnl.ack(message);
   }
 
@@ -220,7 +225,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
    * @memberof AmqpQueue
    */
   async purge(): Promise<amqp.Replies.PurgeQueue> {
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     return chnl.purgeQueue(this.options.name || '');
   }
 
@@ -234,7 +239,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
   private createQueue(): Promise<amqp.Replies.AssertQueue> {
     return new Promise(async (resolve, reject) => {
       try {
-        const chnl = await this.client.channel;
+        const chnl = await this.channel;
         const queue = await chnl.assertQueue(this.options.name || '', this.options);
 
         await this.consumeReplies();
@@ -255,7 +260,7 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
   private async consumeReplies(): Promise<void> {
     if(!this.options.rpc) return;
 
-    const chnl = await this.client.channel;
+    const chnl = await this.channel;
     // Wrap Bluebird in native Promise
     this.rpcQueue = new Promise<amqp.Replies.AssertQueue>((resolve, reject) => {
       chnl.assertQueue('', {

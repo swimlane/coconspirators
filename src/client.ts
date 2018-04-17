@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import * as retry from 'retry';
 import { Deferred } from './deferred';
+import { ChannelOptions } from '.';
 
 export class AmqpClient extends EventEmitter {
 
@@ -81,11 +82,17 @@ export class AmqpClient extends EventEmitter {
    * @returns {Promise<amqp.ConfirmChannel>}
    * @memberof AmqpClient
    */
-  private async createChannel(): Promise<amqp.ConfirmChannel> {
+  async createChannel(opts: ChannelOptions = {}): Promise<amqp.ConfirmChannel> {
     return new Promise<amqp.ConfirmChannel>(async (resolve, reject) => {
       const connection = await this.connection;
       try {
         const channel = await connection.createConfirmChannel();
+
+        // set prefetch
+        if (opts.prefetch) {
+          await channel.prefetch(opts.prefetch);
+        }
+
         resolve(channel);
       } catch (err) {
         this.emit(err);
