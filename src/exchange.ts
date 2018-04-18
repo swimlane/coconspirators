@@ -1,15 +1,15 @@
-import { EventEmitter } from 'events';
-import { AmqpClient } from './client';
-import { NAME_KEY, ExchangeOptions } from './types';
 import * as amqp from 'amqplib';
+import { EventEmitter } from 'events';
+
+import { AmqpClient } from './client';
+import { ExchangeOptions, NAME_KEY } from './types';
 
 export class AmqpExchange<T> extends EventEmitter {
 
+  channel: Promise<amqp.ConfirmChannel>;
   exchange: Promise<amqp.Replies.AssertExchange>;
   name: string;
   options: ExchangeOptions;
-
-  private channel: Promise<amqp.ConfirmChannel>;
 
   /**
    * Creates an instance of AmqpExchange.

@@ -1,11 +1,15 @@
-import { EventEmitter } from 'events';
-import { AmqpClient } from './client';
-import { NAME_KEY, QueueOptions, PublishOptions, SubscribeOptions, ReplyOptions, ReplyableMessage } from './types';
 import * as amqp from 'amqplib';
+import { EventEmitter } from 'events';
 import * as shortid from 'shortid';
+
+import { AmqpClient } from './client';
+import {
+    NAME_KEY, PublishOptions, QueueOptions, ReplyableMessage, ReplyOptions, SubscribeOptions
+} from './types';
 
 export class AmqpQueue<T = Buffer> extends EventEmitter {
 
+  channel: Promise<amqp.ConfirmChannel>;
   queue: Promise<amqp.Replies.AssertQueue>;
   rpcQueue: Promise<amqp.Replies.AssertQueue>;
   options: QueueOptions = {
@@ -13,8 +17,6 @@ export class AmqpQueue<T = Buffer> extends EventEmitter {
     durable: false,
     noAck: true
   };
-
-  private channel: Promise<amqp.ConfirmChannel>;
 
   /**
    * Creates an instance of AmqpQueue.

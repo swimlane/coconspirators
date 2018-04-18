@@ -1,8 +1,9 @@
-import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
+import { EventEmitter } from 'events';
 import * as retry from 'retry';
-import { Deferred } from './deferred';
+
 import { ChannelOptions } from '.';
+import { Deferred } from './deferred';
 
 export class AmqpClient extends EventEmitter {
 
