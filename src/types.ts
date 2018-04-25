@@ -63,7 +63,7 @@ export interface ReplyOptions {
 }
 
 export interface ReplyableMessage<T = Buffer> extends Message {
-  reply?: (content: any) => Promise<{ content: any, properties: ReplyOptions}>;
-  ack?: () => void;
+  reply: (content: any) => Promise<{ content: any, properties: ReplyOptions}>;
+  ack: () => void;
   body: T;
 }
