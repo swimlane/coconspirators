@@ -2,6 +2,9 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/0c04d1d742714daeb66c7a418850aa7d)](https://www.codacy.com/app/Swimlane/coconspirators?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=swimlane/coconspirators&amp;utm_campaign=Badge_Grade) [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/0c04d1d742714daeb66c7a418850aa7d)](https://www.codacy.com/app/Swimlane/coconspirators?utm_source=github.com&utm_medium=referral&utm_content=swimlane/coconspirators&utm_campaign=Badge_Coverage) [![Build Status](https://travis-ci.org/swimlane/coconspirators.svg?branch=master)](https://travis-ci.org/swimlane/coconspirators) [![npm version](https://badge.fury.io/js/coconspirators.svg)](https://badge.fury.io/js/coconspirators)
 
+# ⚠️ This library is no longer under active development ⚠️
+Swimlane no longer uses this library in our codebase. That may change in the future, but for now it will no longer be maintained.
+
 coconspirators is a microservice framework for RabbitMQ written in TypeScript. Under the hood it uses
 [amqp.node](https://github.com/squaremo/amqp.node), the battle-tested AMQP client, to communicate
 with RabbitMQ and has best-practices baked in. Features include:
